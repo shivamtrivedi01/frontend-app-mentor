@@ -1,141 +1,265 @@
-import {ActionRow, Button, Form} from "@openedx/paragon";
-import {Col} from "react-bootstrap";
-import moment from "moment";
+import { Button, Form } from "@openedx/paragon";
+import { Col, Row } from "react-bootstrap";
+import { useState } from "react";
 
-const CreateAppointmentForm = (props) => {
-    const {
-        selectedSlot,
-        mode,
-        onCancel,
-        onSubmit,
-        onDelete,
-        listMentors,
-        isSuperUser,
-    } = props;
-    const {slotInfo} = selectedSlot;
-    return (
-        <Form onSubmit={function (e) {
-            e.preventDefault();
+const weekDays = [
+  { label: "Monday", value: 0 },
+  { label: "Tuesday", value: 1 },
+  { label: "Wednesday", value: 2 },
+  { label: "Thursday", value: 3 },
+  { label: "Friday", value: 4 },
+  { label: "Saturday", value: 5 },
+  { label: "Sunday", value: 6 },
+];
 
-            const formData = new FormData(e.target)
-            const mentor = formData.get("mentor")
+const generateTimes = () => {
+  const times = [];
+  for (let h = 0; h < 24; h++) {
+    ["00", "30"].forEach((m) => {
+      times.push(`${String(h).padStart(2, "0")}:${m}`);
+    });
+  }
+  return times;
+};
 
-            if (onSubmit) {
-                const payload = {
-                    start_time: moment(formData.get("start_time")).format(),
-                    end_time: moment(formData.get("end_time")).format(),
-                    meeting_length: formData.get("meeting_length"),
-                    title: formData.get("title"),
-                    slot_type: formData.get("eventType"),
-                    description: formData.get("agenda"),
-                    action: slotInfo ? "update" : "create",
-                    id: slotInfo?.id || null
-                }
-                if (mentor)
-                    payload.user = mentor
-                onSubmit(payload);
-            }
-            return false;
+const TIME_OPTIONS = generateTimes();
+
+export default function CreateAppointmentForm({
+  selectedSlot,
+  mode,
+  onCancel,
+  onSubmit,
+  onDelete,
+  listMentors,
+  isSuperUser,
+}) {
+  const { slotInfo } = selectedSlot;
+
+  const [weekly, setWeekly] = useState(
+    weekDays.map((day) => ({
+      ...day,
+      enabled: false,
+      ranges: [{ start: "", end: "" }],
+    })),
+  );
+
+  const updateRange = (dayIndex, rangeIndex, field, value) => {
+    const copy = [...weekly];
+    copy[dayIndex].ranges[rangeIndex][field] = value;
+
+    // Reset end if it is now before start
+    if (field === "start" && copy[dayIndex].ranges[rangeIndex].end <= value) {
+      copy[dayIndex].ranges[rangeIndex].end = "";
+    }
+
+    setWeekly(copy);
+  };
+
+  const addRange = (dayIndex) => {
+    const copy = [...weekly];
+    copy[dayIndex].ranges.push({ start: "", end: "" });
+    setWeekly(copy);
+  };
+
+  const deleteRange = (dayIndex, rangeIndex) => {
+    const copy = [...weekly];
+    copy[dayIndex].ranges.splice(rangeIndex, 1);
+    if (copy[dayIndex].ranges.length === 0) {
+      copy[dayIndex].ranges.push({ start: "", end: "" });
+    }
+    setWeekly(copy);
+  };
+
+  // Prevent overlapping start times
+  const getAvailableStartTimes = (dayIndex, rangeIndex) => {
+    const existingRanges = weekly[dayIndex].ranges
+      .filter((_, i) => i !== rangeIndex)
+      .map((r) => [r.start, r.end])
+      .filter(([s, e]) => s && e);
+
+    return TIME_OPTIONS.filter(
+      (time) => !existingRanges.some(([s, e]) => time >= s && time < e),
+    );
+  };
+
+  // Prevent overlapping end times
+  const getAvailableEndTimes = (dayIndex, rangeIndex, start) => {
+    if (!start) return TIME_OPTIONS;
+
+    const existingRanges = weekly[dayIndex].ranges
+      .filter((_, i) => i !== rangeIndex)
+      .map((r) => [r.start, r.end])
+      .filter(([s, e]) => s && e);
+
+    return TIME_OPTIONS.filter(
+      (time) =>
+        time > start && !existingRanges.some(([s, e]) => time > s && time <= e),
+    );
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const payload = {
+      weekly_availability: weekly
+        .filter((d) => d.enabled)
+        .map((d) => ({
+          day: d.value,
+          ranges: d.ranges.filter((r) => r.start && r.end),
+        })),
+      meeting_length: 60,
+      action: slotInfo ? "update" : "create",
+      id: slotInfo?.id,
+    };
+    if (mode === "staff" && isSuperUser) {
+      payload.user = e.target.mentor.value;
+    }
+    onSubmit(payload);
+  };
+
+  return (
+    <Form onSubmit={handleSubmit} style={{ padding: "10px", maxWidth: "100%" }}>
+      {mode === "staff" && isSuperUser && (
+        <Form.Row className="mb-3">
+          <Form.Group as={Col}>
+            <Form.Control
+              as="select"
+              floatingLabel="Mentor"
+              name="mentor"
+              required
+              defaultValue={slotInfo?.user || ""}
+            >
+              {listMentors?.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.username}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </Form.Row>
+      )}
+
+      <h5 className="mb-2">Weekly Availability</h5>
+
+      {/* Scrollable content */}
+      <div
+        style={{
+          border: "1px solid #eee",
+          borderRadius: 6,
+          padding: "10px",
+          maxHeight: "400px",
+          overflowY: "auto",
+          backgroundColor: "#fff",
         }}
+      >
+        {weekly.map((day, dayIndex) => (
+          <div key={day.value} style={{ marginBottom: "12px" }}>
+            <Form.Check
+              type="checkbox"
+              label={day.label}
+              checked={day.enabled}
+              onChange={(e) => {
+                const copy = [...weekly];
+                copy[dayIndex].enabled = e.target.checked;
+                setWeekly(copy);
+              }}
+            />
+
+            {day.ranges.map((r, rangeIndex) => (
+              <Row key={rangeIndex} className="align-items-center mb-2">
+                <Col xs={5}>
+                  <Form.Control
+                    as="select"
+                    disabled={!day.enabled}
+                    value={r.start}
+                    onChange={(e) =>
+                      updateRange(dayIndex, rangeIndex, "start", e.target.value)
+                    }
+                  >
+                    <option value="">Start</option>
+                    {getAvailableStartTimes(dayIndex, rangeIndex).map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Col>
+
+                <Col xs={5}>
+                  <Form.Control
+                    as="select"
+                    disabled={!day.enabled || !r.start}
+                    value={r.end}
+                    onChange={(e) =>
+                      updateRange(dayIndex, rangeIndex, "end", e.target.value)
+                    }
+                  >
+                    <option value="">End</option>
+                    {getAvailableEndTimes(dayIndex, rangeIndex, r.start).map(
+                      (t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ),
+                    )}
+                  </Form.Control>
+                </Col>
+
+                <Col xs={2}>
+                  {day.ranges.length > 1 && (
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => deleteRange(dayIndex, rangeIndex)}
+                    >
+                      ×
+                    </Button>
+                  )}
+                </Col>
+              </Row>
+            ))}
+
+            {day.enabled && (
+              <Button
+                size="sm"
+                variant="outline-primary"
+                onClick={() => addRange(dayIndex)}
+              >
+                + Add time
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Footer buttons outside scroll */}
+      <div
+        style={{
+          marginTop: "10px",
+          paddingTop: "10px",
+          borderTop: "1px solid #eee",
+          display: "flex",
+          justifyContent: "flex-end",
+          backgroundColor: "#fff",
+        }}
+      >
+        <Button
+          variant="tertiary"
+          onClick={onCancel}
+          style={{ marginRight: "8px" }}
         >
-            <Form.Row>
-                <Form.Control
-                    type="text"
-                    floatingLabel="Title"
-                    maxLength={254}
-                    name="title"
-                    defaultValue={slotInfo?.title || ""}
-                />
-                <Form.Text>
-                    This is the title of your meeting.
-                </Form.Text>
-            </Form.Row>
-            <Form.Row className={"mb-3"}>
-                <Form.Control
-                    type="text"
-                    floatingLabel="Agenda"
-                    as="textarea"
-                    name="agenda"
-                    defaultValue={slotInfo?.description || ""}
-                />
-                <Form.Text>
-                    Please describe the agenda of your meeting.
-                </Form.Text>
-            </Form.Row>
-            <Form.Row className={"mb-3"}>
-                <Form.Group as={Col} controlId="formEventType">
-                    <Form.Control
-                        as="select"
-                        name="eventType"
-                        floatingLabel="Event Type"
-                        defaultValue={slotInfo?.slot_type || ""}
-                        required={isSuperUser}
-                    >
-                        <option key="one-time" value="one-time">One Time</option>
-                        <option key="recurring" value="recurring">Recurring</option>
-                        <option key="all-days" value="all-days">All Days</option>
-                        <option key="week-days" value="week-days">Week Days</option>
-                    </Form.Control>
-                    <Form.Text>
-                        Please select the type for this appointment.
-                    </Form.Text>
-                </Form.Group>
-            </Form.Row>
-
-            {mode === "staff" && isSuperUser && <Form.Row className={"mb-3"}>
-                <Form.Group as={Col} controlId="formMentorSelect">
-                    <Form.Control
-                        as="select"
-                        name="mentor"
-                        floatingLabel="Mentor"
-                        defaultValue={slotInfo?.user || ""}
-                        required={isSuperUser}
-                    >
-                        {listMentors?.map((mentor) => (
-                            <option key={mentor.id} value={mentor.id}>{mentor.username}</option>
-                        ))}
-                    </Form.Control>
-                    <Form.Text>
-                        Please select the mentor for this appointment.
-                    </Form.Text>
-                </Form.Group>
-            </Form.Row>}
-            <Form.Row className={"mb-1"}>
-                <Form.Group as={Col} controlId="formEventStart">
-                    <Form.Control
-                        floatingLabel="Start"
-                        type="datetime-local"
-                        name="start_time"
-                        defaultValue={moment(selectedSlot?.start).format("YYYY-MM-DDTHH:mm")}
-                    />
-                </Form.Group>
-
-                <Form.Group as={Col} controlId="formEventEnd">
-                    <Form.Control
-                        floatingLabel="End"
-                        type="datetime-local"
-                        name="end_time"
-                        defaultValue={moment(selectedSlot?.end).format("YYYY-MM-DDTHH:mm")}
-                    />
-                </Form.Group>
-
-                <Form.Group as={Col} controlId="formEventEnd">
-                    <Form.Control
-                        floatingLabel="Meeting Length (Minutes)"
-                        type="integer"
-                        name="meeting_length"
-                        defaultValue={slotInfo?.meeting_length || 60}
-                    />
-                </Form.Group>
-            </Form.Row>
-            <ActionRow>
-                <ActionRow.Spacer/>
-                <Button variant="tertiary" onClick={onCancel}>Cancel</Button>
-                {slotInfo && <Button variant="danger" onClick={onDelete}>Delete</Button>}
-                <Button type={"submit"} disabled={isSuperUser && !listMentors.length}>{slotInfo ? "Update" : "Create"}</Button>
-            </ActionRow>
-        </Form>
-    )
+          Cancel
+        </Button>
+        {slotInfo && (
+          <Button
+            variant="danger"
+            onClick={onDelete}
+            style={{ marginRight: "8px" }}
+          >
+            Delete
+          </Button>
+        )}
+        <Button type="submit">Save</Button>
+      </div>
+    </Form>
+  );
 }
-
-export default CreateAppointmentForm;
