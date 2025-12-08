@@ -1,0 +1,81 @@
+/* BookedEvents.scss */
+
+// Variables
+$primary-color: #007bff;
+$light-gray: #f8f9fa;
+$hover-gray: #e2e6ea;
+$pending-red: #ffe6e6;
+$table-header-bg: #f1f1f1;
+$update-button-bg: $primary-color;
+$update-button-hover: darken($primary-color, 15%);
+
+// Filter group
+.filter-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  strong {
+    margin-right: 0.5rem;
+  }
+
+  .filter-button {
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    background-color: $light-gray;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background-color: $hover-gray;
+    }
+
+    &.active {
+      border: 2px solid $primary-color;
+      background-color: $primary-color;
+      color: #fff;
+    }
+  }
+}
+
+// Table styles
+.booked-events-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+
+  thead {
+    background-color: $table-header-bg;
+  }
+
+  tbody tr:hover {
+    background-color: #f9f9f9;
+  }
+
+  .pending-review {
+    background-color: $pending-red;
+  }
+
+  .update-button {
+    padding: 0.3rem 0.6rem;
+    border: none;
+    background-color: $update-button-bg;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: $update-button-hover;
+    }
+  }
+}
