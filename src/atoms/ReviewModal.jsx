@@ -25,17 +25,17 @@ const ReviewModal = (props) => {
     openReviewModal(false);
   };
 
-  const onSubmit = (reviewData) => {
+  const onSubmit = (formData) => {
     const payload = {
-      ...reviewData,
+      ...formData,
+
+      // provided by context
       event_id: slotInfo?.id,
-      course_id: courseId,
-      user: authenticatedUser?.userId,
     };
 
     submitReview(payload)
       .then(() => close())
-      .catch((err) => console.log(err));
+      .catch((err) => console.error(err));
   };
 
   return (
@@ -54,6 +54,7 @@ const mapStateToProps = (state) => {
   return {
     reviewModalState: mentorScheduleReducer.reviewModalState,
     slotInfo: mentorScheduleReducer.reviewModalState.slotInfo,
+    courseId: mentorScheduleReducer.courseId,
   };
 };
 

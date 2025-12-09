@@ -1,42 +1,70 @@
 import { useState, useEffect } from "react";
-import "./ReviewForm.scss"; // import the CSS
+import "./ReviewForm.scss";
 
 const ReviewForm = ({ slotInfo, onCancel, onSubmit }) => {
-  const [reviewDescription, setReviewDescription] = useState("");
-  const [isPassed, setIsPassed] = useState(false);
+  const [result, setResult] = useState("passed"); // passed | failed
+  const [failureReason, setFailureReason] = useState("absent"); // absent | other
+  const [description, setDescription] = useState(""); // only when failureReason = other
 
   useEffect(() => {
-    if (slotInfo) {
-      setReviewDescription(slotInfo.review_description || "");
-      setIsPassed(slotInfo.is_passed || false);
-    }
+    if (!slotInfo) return;
+
+    // Initialize from backend fields if available
+    setResult(slotInfo.result || "passed");
+    setFailureReason(slotInfo.failure_reason || "absent");
+    setDescription(slotInfo.description || "");
   }, [slotInfo]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({
-      review_description: reviewDescription,
-      is_passed: isPassed,
-    });
+
+    const payload = {
+      result,
+      failure_reason: result === "failed" ? failureReason : null,
+      description:
+        result === "failed" && failureReason === "other" ? description : null,
+    };
+
+    onSubmit(payload);
   };
 
   return (
     <form className="review-form" onSubmit={handleSubmit}>
-      <div>
-        <label>Review Description</label>
-        <textarea
-          value={reviewDescription}
-          onChange={(e) => setReviewDescription(e.target.value)}
-        />
+      {/* Result Dropdown */}
+      <div className="form-group">
+        <label>Result</label>
+        <select value={result} onChange={(e) => setResult(e.target.value)}>
+          <option value="passed">Passed</option>
+          <option value="failed">Failed</option>
+        </select>
       </div>
-      <div className="checkbox-group">
-        <input
-          type="checkbox"
-          checked={isPassed}
-          onChange={(e) => setIsPassed(e.target.checked)}
-        />
-        <label>Passed</label>
-      </div>
+
+      {/* Failure Reason - Only When Failed */}
+      {result === "failed" && (
+        <div className="form-group">
+          <label>Reason for Failure</label>
+          <select
+            value={failureReason}
+            onChange={(e) => setFailureReason(e.target.value)}
+          >
+            <option value="absent">Absent</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      )}
+
+      {/* Description Field - Only When Failed + Other */}
+      {result === "failed" && failureReason === "other" && (
+        <div className="form-group">
+          <label>Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Enter details"
+          />
+        </div>
+      )}
+
       <div className="buttons">
         <button type="submit">Save</button>
         <button type="button" onClick={onCancel}>

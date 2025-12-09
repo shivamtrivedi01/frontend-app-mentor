@@ -3,7 +3,7 @@ import { connect } from "react-redux";
 import { fetchBookedEvents, openReviewModal } from "./data/thunks";
 import { AppContext } from "@edx/frontend-platform/react";
 import ReviewModal from "../../atoms/ReviewModal";
-import "./BookedEvents.scss"; // import the CSS
+import "./BookedEvents.scss";
 
 const BookedEvents = ({ bookedEvents, fetchBookedEvents, openReviewModal }) => {
   const { authenticatedUser } = useContext(AppContext);
@@ -33,13 +33,18 @@ const BookedEvents = ({ bookedEvents, fetchBookedEvents, openReviewModal }) => {
 
   const now = new Date();
 
+  // Updated filter logic using new backend fields
   const filteredEvents = bookedEvents
     .filter((event) => {
-      if (filter === "pending")
-        return !event.is_passed && !event.review_description;
-      if (filter === "given")
-        return event.is_passed || !!event.review_description;
-      return true;
+      if (filter === "pending") {
+        // Pending: no result yet
+        return !event.result;
+      }
+      if (filter === "given") {
+        // Given: result has been submitted
+        return !!event.result;
+      }
+      return true; // All
     })
     .filter((event) => {
       const eventDate = new Date(event.start_time);
@@ -110,30 +115,24 @@ const BookedEvents = ({ bookedEvents, fetchBookedEvents, openReviewModal }) => {
           </tr>
         </thead>
         <tbody>
-          {filteredEvents.map((event) => {
-            const isPending = !event.is_passed && !event.review_description;
-            return (
-              <tr key={event.id} className={isPending ? "pending-review" : ""}>
-                <td>{event.event_name}</td>
-                <td>{event.course_id}</td>
-                <td>{formatDate(event.start_time)}</td>
-                <td>{formatDate(event.end_time)}</td>
-                <td>{event.event_guests?.map((g) => g.username).join(", ")}</td>
-                <td>
-                  {isPending ? (
-                    <button
-                      className="update-button"
-                      onClick={() => handleUpdateClick(event)}
-                    >
-                      Update
-                    </button>
-                  ) : (
-                    <span>✅</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
+          {filteredEvents.map((event) => (
+            <tr key={event.id}>
+              <td>{event.event_name}</td>
+              <td>{event.course_id}</td>
+              <td>{formatDate(event.start_time)}</td>
+              <td>{formatDate(event.end_time)}</td>
+              <td>{event.event_guests?.map((g) => g.username).join(", ")}</td>
+              <td>
+                <button
+                  className={`update-button ${event.result ? "review-given" : ""}`}
+                  onClick={() => handleUpdateClick(event)}
+                >
+                  {event.result ? "View/Edit Review" : "Add Review"}
+                </button>
+                {event.result && <span className="review-check"> ✅</span>}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
 
