@@ -11,13 +11,7 @@ import {
 import ReviewForm from "./ReviewForm";
 
 const ReviewModal = (props) => {
-  const {
-    reviewModalState,
-    openReviewModal,
-    submitReview,
-    slotInfo,
-    courseId,
-  } = props;
+  const { reviewModalState, openReviewModal, submitReview, slotInfo } = props;
 
   const { authenticatedUser } = useContext(AppContext);
 

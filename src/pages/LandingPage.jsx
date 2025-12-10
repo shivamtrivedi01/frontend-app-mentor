@@ -17,7 +17,8 @@ const LandingPage = (props) => {
   const { courseId: courseIdFromUrl } = useParams();
 
   useEffect(() => {
-    fetchMyRoles(courseIdFromUrl);
+    // fetchMyRoles(courseIdFromUrl);
+    fetchMyRoles();
   }, []);
 
   useEffect(() => {
@@ -28,7 +29,7 @@ const LandingPage = (props) => {
 
   return (
     <div className="mentor-app-landing-page">
-      {myRolesInfo?.is_superuser && (
+      {/*{myRolesInfo?.is_superuser && (
         <Tabs variant="tabs">
           <Tab
             eventKey="mentor-schedule"
@@ -45,8 +46,8 @@ const LandingPage = (props) => {
             <ManageMentor myRolesInfo={myRolesInfo} />
           </Tab>
         </Tabs>
-      )}
-      {!myRolesInfo?.is_superuser && (
+      )}*/}
+      {myRolesInfo?.is_mentor && (
         <Tabs variant="tabs">
           <Tab
             eventKey="mentor-schedule"
@@ -55,6 +56,13 @@ const LandingPage = (props) => {
           >
             <MentorSchedule myRolesInfo={myRolesInfo} />
           </Tab>
+          <Tab eventKey="mentor-booked" title="Booked Events">
+            <BookedEvents myRolesInfo={myRolesInfo} />
+          </Tab>
+        </Tabs>
+      )}
+      {!myRolesInfo?.is_mentor && !myRolesInfo.is_superuser && (
+        <Tabs variant="tabs">
           <Tab eventKey="mentor-booked" title="Booked Events">
             <BookedEvents myRolesInfo={myRolesInfo} />
           </Tab>

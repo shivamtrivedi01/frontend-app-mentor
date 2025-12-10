@@ -1,19 +1,17 @@
 interface MyRolesInfo {
-    course_roles: string[];
-    is_staff: boolean;
-    is_superuser: boolean;
+  // course_roles: string[];
+  is_staff: boolean;
+  is_superuser: boolean;
+  is_mentor: boolean;
 }
 
 interface MentorUser {
-    username: string
-    email: string
-    date_joined: string
-    is_active: boolean
-    id: number
-    has_mentorship: boolean
+  username: string;
+  email: string;
+  date_joined: string;
+  is_active: boolean;
+  id: number;
+  has_mentorship: boolean;
 }
 
-export {
-    MyRolesInfo,
-    MentorUser,
-}
+export { MyRolesInfo, MentorUser };
