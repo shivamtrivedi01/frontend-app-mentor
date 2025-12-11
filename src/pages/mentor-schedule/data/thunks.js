@@ -70,8 +70,8 @@ export function deleteAppointmentSlot(id) {
 // -----------------------
 // Booked Events Thunks
 // -----------------------
-export const fetchBookedEvents = (organizerId) => async (dispatch) => {
-  const { data } = await fetchBookedEventsApi(organizerId);
+export const fetchBookedEvents = (userId, isMentor) => async (dispatch) => {
+  const { data } = await fetchBookedEventsApi(userId, isMentor);
   dispatch(setBookedEvents(data));
 };
 

@@ -32,13 +32,16 @@ export async function deleteAppointmentSlotApi(id) {
   return getAuthenticatedHttpClient().delete(url);
 }
 
-export async function fetchBookedEventsApi(organizerId) {
+export async function fetchBookedEventsApi(userId, isMentor) {
   const url = `${getConfig().LMS_BASE_URL}/mentoring/api/v1/mentoring-events/`;
-
   const params = {
-    organizer: organizerId, // backend filters events created by this user
     page_size: 1000,
   };
+  if (isMentor) {
+    params.organiser = userId;
+  } else {
+    params.guests = userId;
+  }
 
   return getAuthenticatedHttpClient().get(url, { params });
 }

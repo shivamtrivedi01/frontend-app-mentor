@@ -21,11 +21,11 @@ const LandingPage = (props) => {
     fetchMyRoles();
   }, []);
 
-  useEffect(() => {
-    if (myRolesInfo?.is_superuser) {
-      fetchMentorList(courseIdFromUrl);
-    }
-  }, [myRolesInfo]);
+  // useEffect(() => {
+  //   if (myRolesInfo?.is_superuser) {
+  //     fetchMentorList(courseIdFromUrl);
+  //   }
+  // }, [myRolesInfo]);
 
   return (
     <div className="mentor-app-landing-page">

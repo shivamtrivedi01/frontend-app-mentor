@@ -21,7 +21,7 @@ const BookedEvents = ({
 
   useEffect(() => {
     if (authenticatedUser) {
-      fetchBookedEvents(authenticatedUser.userId);
+      fetchBookedEvents(authenticatedUser.userId, isMentor);
     }
   }, [authenticatedUser]);
 
@@ -177,7 +177,9 @@ const BookedEvents = ({
                       : "—"
                   : event.failure_reason === "absent"
                     ? "No"
-                    : "Yes"}
+                    : event.failure_reason === null
+                      ? "N/A"
+                      : "Yes"}
               </td>
               {isMentor && (
                 <td>
